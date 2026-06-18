@@ -1,0 +1,14 @@
+.git
+.gitignore
+.env
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+.pytest_cache
+.mypy_cache
+node_modules
+frontend/static/js/*.map
+Multicrop Disease Dataset/train
+Multicrop Disease Dataset/test

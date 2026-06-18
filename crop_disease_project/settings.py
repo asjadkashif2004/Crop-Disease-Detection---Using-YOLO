@@ -7,6 +7,20 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
+def get_bool_config(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def get_list_config(name, default=None):
+    value = os.environ.get(name)
+    if not value:
+        return list(default or [])
+    return [item.strip() for item in value.split(',') if item.strip()]
+
+
 def get_local_config(name, default=''):
     """
     Reads local settings from environment variables first, then from .env.
@@ -33,10 +47,11 @@ def get_local_config(name, default=''):
     return default
 
 SECRET_KEY = 'django-insecure-fyp-crop-disease-detection-key-2025'
+SECRET_KEY = get_local_config('SECRET_KEY', SECRET_KEY)
 
-DEBUG = False
+DEBUG = get_bool_config('DEBUG', False)
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = get_list_config('ALLOWED_HOSTS', ['localhost', '127.0.0.1', '.hf.space'])
 
 INSTALLED_APPS = [
     'django.contrib.contenttypes',
@@ -49,6 +64,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -74,11 +91,18 @@ WSGI_APPLICATION = 'crop_disease_project.wsgi.application'
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'frontend' / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS — allow localhost frontend
 CORS_ALLOW_ALL_ORIGINS = True
+
+CSRF_TRUSTED_ORIGINS = get_list_config(
+    'CSRF_TRUSTED_ORIGINS',
+    ['https://*.hf.space']
+)
 
 GROQ_API_KEY = get_local_config('GROQ_API_KEY')
 GROQ_MODEL = get_local_config('GROQ_MODEL', 'llama-3.3-70b-versatile')
@@ -97,12 +121,17 @@ REST_FRAMEWORK = {
 # Trained model weights path
 # ─────────────────────────────────────────────────────────────────
 MODEL_WEIGHTS_PATH = str(
-    BASE_DIR
-    / 'Multicrop Disease Dataset'
-    / 'runs'
-    / 'detect'
-    / 'fyp_crop_disease'
-    / 'run1'
-    / 'weights'
-    / 'best.pt'
+    get_local_config(
+        'MODEL_WEIGHTS_PATH',
+        str(
+            BASE_DIR
+            / 'Multicrop Disease Dataset'
+            / 'runs'
+            / 'detect'
+            / 'fyp_crop_disease'
+            / 'run1'
+            / 'weights'
+            / 'best.pt'
+        )
+    )
 )
